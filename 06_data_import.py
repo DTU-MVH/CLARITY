@@ -8,9 +8,9 @@ DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1UIN-r0rtcU1xaMbgnn45
 
 # REPLACE THESE PLACEHOLDERS with the actual names of the files inside the Drive folder
 # Ensure you keep the file extensions (e.g., 'data_2023.csv')
-files_to_raw    = ["file1.csv", "file2.csv"]        # These go to /_raw
-files_to_data   = ["file3.csv"]                     # These go to /data
-files_to_output = ["file4.csv", "file5.csv"]        # These go to /data/output
+files_to_raw    = ["9606.protein.info.v12.0.txt", "9606.protein.links.v12.0.min400.onlyAB.tsv"]        # These go to /_raw
+files_to_data   = ["cleaned_data.csv"]                     # These go to /data
+files_to_output = ["louvain_clust_julle.pkl", "mcl_data.pkl"]        # These go to /data/output
 
 # Temporary folder to hold the download before sorting
 TEMP_DIR = "temp_drive_download"
