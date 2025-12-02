@@ -87,28 +87,45 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
 
     # --- 4. Run ORA with g:Profiler ---
     try:
+        print("[INFO] Initializing g:Profiler...")
         gp = GProfiler(return_dataframe=True)
         
         print("[INFO] Querying g:Profiler API...")
         
-        # Run the profile query
-        # Sources: GO:BP (Biological Process), REAC (Reactome)
-        results = gp.profile(
-            organism='hsapiens',
-            query=target_gene_list,
-            background=background_gene_list,
-            sources=['GO:BP', 'REAC'], 
-            user_threshold=0.05,
-            significance_threshold_method='fdr', # False Discovery Rate (Benjamini-Hochberg)
-            no_evidences=False  # Keep True if you don't need evidence codes, False speeds it up slightly
-        )
+        try:
+            # Run the profile query
+            # Sources: GO:BP (Biological Process), REAC (Reactome)
+            results = gp.profile(
+                organism='hsapiens',
+                query=target_gene_list,
+                background=background_gene_list,
+                sources=['GO:BP', 'REAC'], 
+                user_threshold=0.05,
+                significance_threshold_method='fdr', # False Discovery Rate (Benjamini-Hochberg)
+                no_evidences=False  # Keep True if you don't need evidence codes, False speeds it up slightly
+            )
+        except KeyError as ke:
+            print(f"❌ KeyError in g:Profiler response: {ke}")
+            print("[INFO] This often happens due to missing 'intersection' column in the API response.")
+            print("[INFO] Retrying with 'no_evidences=True' parameter...")
+            
+            # Retry without evidences which might simplify response
+            results = gp.profile(
+                organism='hsapiens',
+                query=target_gene_list,
+                background=background_gene_list,
+                sources=['GO:BP', 'REAC'], 
+                user_threshold=0.05,
+                significance_threshold_method='fdr',
+                no_evidences=True  # Simplify response
+            )
 
         if results.empty:
             print("[RESULT] No statistically significant pathways found.")
             return None
         
         # --- 5. Format Results to match previous structure ---
-        # g:Profiler output cols: source, native, name, p_value, significant, description, term_size, query_size, intersection_size, effective_domain_size, intersection
+        # g:Profiler output cols: source, native, name, p_value, significant, description, term_size, query_size, intersection_size, effective_domain_size, intersections, evidences, etc.
         
         results['Overlap'] = results['intersection_size'].astype(str) + "/" + results['term_size'].astype(str)
         
@@ -120,8 +137,15 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
         }, inplace=True)
 
         # Convert list of intersection genes to string (e.g., "GENE1;GENE2") if it's a list
-        # g:Profiler returns 'intersection' as a list of strings
-        results['Genes'] = results['intersection'].apply(lambda x: ';'.join(x) if isinstance(x, list) else str(x))
+        # g:Profiler returns 'intersections' (plural) as a dict with gene IDs as keys
+        # Handle case where 'intersections' or 'intersection' column might not exist
+        if 'intersections' in results.columns:
+            results['Genes'] = results['intersections'].apply(lambda x: ';'.join(x.keys()) if isinstance(x, dict) else str(x))
+        elif 'intersection' in results.columns:
+            results['Genes'] = results['intersection'].apply(lambda x: ';'.join(x) if isinstance(x, list) else str(x))
+        else:
+            # Fallback: use empty string if intersection column doesn't exist
+            results['Genes'] = ""
 
         # We don't have a raw P-value from g:Profiler output easily, so we duplicate Adj P-value or leave blank
         results['P-value'] = results['Adjusted P-value'] 
@@ -153,6 +177,10 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
 
     except Exception as e:
         print(f"❌ Analysis failed: {e}")
+        # Print full traceback for debugging
+        import traceback
+        print("\n[DEBUG] Full traceback:")
+        traceback.print_exc()
         # Helpful debugging for g:profiler specific errors
         if "404" in str(e) or "Connection" in str(e):
             print("   (Check your internet connection)")
