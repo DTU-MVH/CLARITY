@@ -1,165 +1,197 @@
+import warnings
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated as an API")
+
 """
-Method validation using the project's enrichment (g:Profiler) pipeline.
-
-Loads a clustering pickle (saved by `01_run_louvain.py`) and runs ORA for
-each cluster using `gprofiler-official` (same approach as
-`enrichment_analysis_2.py`). Produces a CSV with per-cluster metrics and a
-histogram showing the percentage of proteins in each cluster involved in
-significant pathways.
-
-Usage:
-    python features/prot_clust_modules/method_validation_enrichment.py
-
-Adjust `PICKLE_PATH` and `OUTPUT_DIR` variables below as needed.
+Module: validation_analysis.py
+Description: 
+    Iterates over ALL clusters in a clustering result, performs ORA using 
+    gprofiler-official, and calculates quality metrics (pathway coverage).
+    Generates a summary CSV and a histogram of protein coverage.
 """
-
-import os
-import pickle
 import pandas as pd
+import pickle
+import os
 import matplotlib.pyplot as plt
-from gprofiler import GProfiler
+import numpy as np
 
+# Try importing gprofiler-official
+try:
+    from gprofiler import GProfiler
+    GPROFILER_AVAILABLE = True
+except ImportError:
+    GPROFILER_AVAILABLE = False
 
-def run_validation(pickle_path="data/output/louvain_clust_julle.pkl", output_dir="data/output",
-                   pval_thresh=0.05, sources=["GO:BP", "REAC"]):
+def run_validation_analysis(pickle_path, output_dir, clust_algo_used="unknown"):
+    """
+    Validates clustering quality by running ORA on all clusters.
+
+    Parameters:
+        pickle_path (str): Path to the .pkl file containing 'communities' and 'graph'.
+        output_dir (str): Directory where results and plots will be saved.
+        clust_algo_used (str): Name of the algorithm (for file naming).
+
+    Returns:
+        pd.DataFrame: Summary dataframe of validation results.
+    """
+
+    if not GPROFILER_AVAILABLE:
+        print("❌ Error: 'gprofiler-official' library not installed.")
+        print("   Run: pip install gprofiler-official")
+        return None
+
+    print(f"\n--- 🧪 Validation Analysis (g:Profiler): {clust_algo_used} ---")
+
+    # --- 1. Load Data ---
     if not os.path.exists(pickle_path):
-        raise FileNotFoundError(f"Pickle file not found: {pickle_path}")
+        print(f"❌ Error: Pickle file not found at {pickle_path}")
+        return None
 
-    with open(pickle_path, "rb") as f:
-        data = pickle.load(f)
+    try:
+        with open(pickle_path, "rb") as f:
+            data = pickle.load(f)
+        
+        communities = data['communities']
+        G = data['graph']
+        
+        # Define Background (Universe)
+        background_gene_list = list(G.nodes())
+        print(f"[INFO] Loaded {len(communities)} clusters.")
+        print(f"[INFO] Background universe size: {len(background_gene_list)} genes.")
 
-    communities = data.get("communities")
-    G = data.get("graph")
+    except Exception as e:
+        print(f"❌ Error loading pickle: {e}")
+        return None
 
-    if communities is None or G is None:
-        raise ValueError("Pickle does not contain 'communities' and 'graph'.")
-
-    background_gene_list = list(G.nodes())
-
-    print(f"Background universe size: {len(background_gene_list)} genes.")
-
-    gp = GProfiler()
-
+    # --- 2. Initialize g:Profiler ---
+    gp = GProfiler(return_dataframe=True)
     validation_results = []
 
-    for cid, comm in enumerate(communities):
-        cluster_gene_list = list(comm)
+    print("[INFO] Starting iteration over clusters (this may take time)...")
+
+    # --- 3. Iteration Loop ---
+    for i, cluster_set in enumerate(communities):
+        # Convert to list
+        cluster_gene_list = list(cluster_set)
         n_total_proteins = len(cluster_gene_list)
 
-        if n_total_proteins == 0:
+        # Skip tiny clusters (optional, but good for noise reduction)
+        if n_total_proteins < 3:
             continue
 
         try:
+            # Run ORA
+            # We use no_evidences=False to ensure we get the 'intersections' column
             results = gp.profile(
-                organism="hsapiens",
+                organism='hsapiens',
                 query=cluster_gene_list,
                 background=background_gene_list,
-                sources=sources,
-                user_threshold=pval_thresh,
+                sources=['GO:BP', 'REAC'], 
+                user_threshold=0.05,
                 significance_threshold_method='fdr',
-                no_evidences=True,
-                as_dataframe=True
+                no_evidences=False 
             )
 
-            # If results empty or no significant rows, handle gracefully
-            if results is None or (hasattr(results, 'empty') and results.empty):
-                n_sig_pathways = 0
-                unique_sig_proteins = set()
-            else:
-                # Debug: show what columns we received
-                try:
-                    print(f"[DEBUG] Cluster {cid} -- result columns: {list(results.columns)}")
-                    # print a tiny sample
-                    try:
-                        print(results.head(3))
-                    except Exception:
-                        pass
-                except Exception:
-                    pass
-
-                # Determine p-value column (robust to different wrapper versions)
-                pval_col = None
-                for candidate in ['p_value', 'Adjusted P-value', 'pvalue', 'p_val', 'pval']:
-                    if candidate in results.columns:
-                        pval_col = candidate
-                        break
-
-                if pval_col is None:
-                    # No p-value column found; treat as no significant results
-                    n_sig_pathways = 0
-                    unique_sig_proteins = set()
-                else:
-                    # Extract genes participating in each enriched term
-                    if 'intersections' in results.columns:
-                        results['Genes'] = results['intersections'].apply(
-                            lambda x: ';'.join(x.keys()) if isinstance(x, dict) else str(x)
-                        )
-                    elif 'intersection' in results.columns:
-                        results['Genes'] = results['intersection'].apply(
-                            lambda x: ';'.join(x) if isinstance(x, list) else str(x)
-                        )
-                    else:
-                        # fallback: try known gene columns
-                        results['Genes'] = results.get('intersections', results.get('intersection', ''))
-
-                    # Use the determined p-value column for filtering
-                    sig_results = results[results[pval_col] < pval_thresh]
-                    n_sig_pathways = len(sig_results)
-
-                    unique_sig_proteins = set()
-                    if n_sig_pathways > 0:
-                        all_genes_string = ";".join(sig_results['Genes'].astype(str).tolist())
-                        split_genes = [g for g in all_genes_string.split(';') if g]
-                        unique_sig_proteins = set(split_genes)
-
-        except Exception as e:
-            print(f"Error processing cluster {cid}: {e}")
             n_sig_pathways = 0
             unique_sig_proteins = set()
 
-        n_unique_sig_proteins = len(unique_sig_proteins)
-        percentage = (n_unique_sig_proteins / n_total_proteins) * 100
+            if not results.empty:
+                # 'p_value' is already the adjusted p-value in g:Profiler outputs
+                # Just to be safe, filter again
+                sig_results = results[results['p_value'] < 0.05]
+                n_sig_pathways = len(sig_results)
 
-        validation_results.append({
-            'Cluster_ID': cid,
-            'Total_Proteins': n_total_proteins,
-            'Significant_Pathways': n_sig_pathways,
-            'Unique_Significant_Proteins': n_unique_sig_proteins,
-            'Percentage_Involved': percentage
-        })
+                if n_sig_pathways > 0:
+                    # Extract genes involved in significant pathways.
+                    # g:Profiler returns 'intersections' as a list of gene IDs (strings) 
+                    # OR sometimes a dict if evidence codes are mixed.
+                    
+                    col_name = 'intersections' if 'intersections' in sig_results.columns else 'intersection'
+                    
+                    if col_name in sig_results.columns:
+                        for item in sig_results[col_name]:
+                            if isinstance(item, list):
+                                unique_sig_proteins.update(item)
+                            elif isinstance(item, dict):
+                                unique_sig_proteins.update(item.keys())
+                            elif isinstance(item, str):
+                                unique_sig_proteins.add(item)
 
-    # Save and report
+            # Calculate Stats
+            n_unique_sig_proteins = len(unique_sig_proteins)
+            percentage = (n_unique_sig_proteins / n_total_proteins) * 100
+
+            # Store results
+            validation_results.append({
+                'Cluster_ID': i,
+                'Total_Proteins': n_total_proteins,
+                'Significant_Pathways': n_sig_pathways,
+                'Unique_Significant_Proteins': n_unique_sig_proteins,
+                'Percentage_Involved': percentage
+            })
+            
+            # Simple progress indicator
+            if (i + 1) % 10 == 0:
+                print(f"   ... Processed {i + 1}/{len(communities)} clusters")
+
+        except Exception as e:
+            print(f"⚠️ Error processing Cluster {i}: {e}")
+
+    # --- 4. Analysis & Visualization ---
+    if not validation_results:
+        print("❌ No validation results generated.")
+        return None
+
     df_validation = pd.DataFrame(validation_results)
+    
+    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
-    output_filename = os.path.join(output_dir, "method_validation_results.csv")
-    df_validation.to_csv(output_filename, index=False)
 
-    print("\n--- Validation Results Summary (first 10 rows) ---")
-    print(df_validation.head(10))
-    print(f"\nResults saved to {output_filename}")
+    # Save to CSV
+    csv_filename = f"validation_summary_{clust_algo_used}.csv"
+    csv_path = os.path.join(output_dir, csv_filename)
+    df_validation.to_csv(csv_path, index=False)
+    print(f"\n✅ Validation results saved to: {csv_path}")
 
+    # Calculate Global Averages
     avg_percentage = df_validation['Percentage_Involved'].mean()
     avg_pathways = df_validation['Significant_Pathways'].mean()
 
-    print(f"\nAverage Percentage of Proteins involved in Significant Pathways: {avg_percentage:.2f}%")
-    print(f"Average number of Significant Pathways per Cluster: {avg_pathways:.2f}")
+    print(f"\n--- 📊 Global Stats ({clust_algo_used}) ---")
+    print(f"Average % Proteins in Significant Pathways: {avg_percentage:.2f}%")
+    print(f"Average # Significant Pathways per Cluster: {avg_pathways:.2f}")
 
-    # Plot histogram
+    # --- 5. Plotting ---
     plt.figure(figsize=(10, 6))
-    plt.hist(df_validation['Percentage_Involved'].dropna(), bins=20, color='skyblue', edgecolor='black')
-    plt.title('Method Validation: Protein Coverage by Significant Pathways')
-    plt.xlabel('Percentage of Proteins in Cluster Involved in Sig. Pathways (%)')
-    plt.ylabel('Number of Clusters')
-    plt.axvline(avg_percentage, color='red', linestyle='dashed', linewidth=1, label=f'Mean: {avg_percentage:.1f}%')
+    
+    # Histogram
+    plt.hist(df_validation['Percentage_Involved'], bins=20, color='#69b3a2', edgecolor='black', alpha=0.8)
+    
+    # Add vertical line for mean
+    plt.axvline(avg_percentage, color='red', linestyle='dashed', linewidth=1.5, label=f'Mean: {avg_percentage:.1f}%')
+    
+    plt.title(f'Cluster Validation: Protein Coverage by Pathways\n({clust_algo_used}, Sources: GO:BP, REAC)', fontsize=14)
+    plt.xlabel('Percentage of Proteins in Cluster Involved in Sig. Pathways (%)', fontsize=12)
+    plt.ylabel('Number of Clusters', fontsize=12)
     plt.legend()
-    plt.grid(axis='y', alpha=0.5)
-    plt.show()
+    plt.grid(axis='y', alpha=0.3)
+    
+    # Save Plot
+    plot_filename = f"validation_coverage_plot_{clust_algo_used}.png"
+    plot_path = os.path.join(output_dir, plot_filename)
+    plt.savefig(plot_path, dpi=300)
+    print(f"✅ Plot saved to: {plot_path}")
+    plt.close() # Close to prevent display issues in non-notebook environments
 
     return df_validation
 
-
-__all__ = ["run_validation"]
-
-# Usage from other modules:
-# from features.prot_clust_modules.method_validation_enrichment import run_validation
-# df = run_validation(pickle_path="data/output/louvain_clust_julle.pkl", output_dir="data/output", pval_thresh=0.05)
+# --- Example Usage (if run as script) ---
+if __name__ == "__main__":
+    # Define paths (Edit these as needed)
+    PICKLE_FILE = "results/louvain_results.pkl" # Example path
+    OUT_DIR = "results/validation"
+    ALGO = "louvain"
+    
+    if os.path.exists(PICKLE_FILE):
+        run_validation_analysis(PICKLE_FILE, OUT_DIR, ALGO)
+    else:
+        print(f"File {PICKLE_FILE} not found. Please import this module and run 'run_validation_analysis'.")
