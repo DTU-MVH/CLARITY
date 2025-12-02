@@ -1,77 +1,74 @@
 import os
-from pathlib import Path
-import sys
+import shutil
+import gdown
 
-# --- Configuration ---
-# Your specific File ID for 'data_file_protein.tsv'
-TARGET_FILE_ID = '1frPiLnGVfVNmmpr0IhX5qUp_kYRB1bQg' 
-TARGET_FILENAME = "data_file_protein.tsv"
-# ---------------------
+# --- CONFIGURATION ---------------------------------------------------------
+# The Google Drive Folder URL
+DRIVE_FOLDER_URL = 'https://drive.google.com/drive/folders/1UIN-r0rtcU1xaMbgnn450Pr3LcsqaKFs?usp=sharing'
 
-# NOTE: This script requires the 'gdown' library, which should be checked by pre_requisites.py
-try:
-    import gdown
-except ImportError:
-    print("The 'gdown' library is not installed. Please run pre_requisites.py first.")
-    # Exit with a system error code to stop main.py cleanly
-    sys.exit(1)
+# REPLACE THESE PLACEHOLDERS with the actual names of the files inside the Drive folder
+# Ensure you keep the file extensions (e.g., 'data_2023.csv')
+files_to_raw    = ["file1.csv", "file2.csv"]        # These go to /_raw
+files_to_data   = ["file3.csv"]                     # These go to /data
+files_to_output = ["file4.csv", "file5.csv"]        # These go to /data/output
 
+# Temporary folder to hold the download before sorting
+TEMP_DIR = "temp_drive_download"
+# ---------------------------------------------------------------------------
 
-def setup_project_folders():
-    """
-    1. Creates the _raw and data folders in the project directory if they don't exist.
-    """
-    print("--- 📂 Setting up project folders...")
+def create_dirs():
+    """Create the required directory structure."""
+    dirs = ["_raw", "data", "data/output"]
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+        print(f"✅ Directory ready: {d}")
+
+def download_drive_folder():
+    """Download the Google Drive folder contents."""
+    print(f"\n⬇️  Downloading folder from Google Drive...")
     
-    # Define the folders relative to the project root
-    raw_folder = Path("_raw")
-    data_folder = Path("data")
+    # Check if temp dir exists and clean it if needed to avoid conflicts
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR)
     
-    # Create folders: exist_ok=True prevents errors if they already exist.
-    raw_folder.mkdir(exist_ok=True)
-    data_folder.mkdir(exist_ok=True)
-    
-    print(f"Created/ensured folder: {raw_folder.resolve()}")
-    print(f"Created/ensured folder: {data_folder.resolve()}")
-    print("Folders setup complete.\n")
-    
-    # Return the data folder path, as this is the final destination for the file
-    return raw_folder
+    # Download the folder using gdown
+    gdown.download_folder(url=DRIVE_FOLDER_URL, output=TEMP_DIR, quiet=False, use_cookies=False)
+    print("✅ Download complete.")
 
+def move_files():
+    """Move files from temp folder to their specific destinations."""
+    print("\nCc️  Moving files to project structure...")
 
-def import_google_drive_data(target_folder: Path):
-    """
-    2. Imports the specified file from Google Drive into the local data folder.
-    """
-    print(f"--- ⬇️ Importing Google Drive file: {TARGET_FILENAME}...")
-    
-    # Define the full local path where the file should be saved
-    output_path = target_folder / TARGET_FILENAME
-    
-    try:
-        # Use gdown.download() for a single file. 
-        # Using minimal arguments to ensure compatibility with various gdown versions.
-        gdown.download(
-            id=TARGET_FILE_ID,
-            output=str(output_path),
-            quiet=False, # Show progress
-            use_cookies=False, 
-        )
-        print("\n✅ Data import successful!")
-        print(f"File downloaded to: {output_path.resolve()}")
-        
-    except Exception as e:
-        print("\n❌ Error during data import!")
-        print("Please ensure the specific file is set to 'Anyone with the link' (Viewer).")
-        print(f"Error details: {e}")
-        # Use raise to propagate the error back to main.py's subprocess handler
-        raise 
+    # Dictionary mapping destination folders to the list of files intended for them
+    moves = {
+        "_raw": files_to_raw,
+        "data": files_to_data,
+        "data/output": files_to_output
+    }
 
+    for dest_folder, file_list in moves.items():
+        for filename in file_list:
+            src_path = os.path.join(TEMP_DIR, filename)
+            dst_path = os.path.join(dest_folder, filename)
+
+            if os.path.exists(src_path):
+                shutil.move(src_path, dst_path)
+                print(f"moved: {filename} -> {dest_folder}/")
+            else:
+                print(f"⚠️  WARNING: Could not find '{filename}' in the downloaded folder. Check the name in CONFIGURATION.")
+
+def cleanup():
+    """Remove the temporary download folder."""
+    if os.path.exists(TEMP_DIR):
+        shutil.rmtree(TEMP_DIR)
+        print("\n🧹 Cleanup complete (temp folder removed).")
+
+def main():
+    create_dirs()
+    download_drive_folder()
+    move_files()
+    cleanup()
+    print("\n🚀 CLARITY data import finished successfully.")
 
 if __name__ == "__main__":
-    
-    # 1. Create the necessary folders and get the target directory (data folder)
-    target_data_folder = setup_project_folders()
-    
-    # 2. Import the single file into the 'data' folder
-    import_google_drive_data(target_data_folder)
+    main()
