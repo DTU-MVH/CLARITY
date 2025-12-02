@@ -20,15 +20,8 @@ import matplotlib.pyplot as plt
 from gprofiler import GProfiler
 
 
-# Configuration (edit if needed)
-PICKLE_PATH = "data/output/louvain_clust_julle.pkl"
-OUTPUT_DIR = "data/output"
-PVALUE_THRESHOLD = 0.05
-SOURCES = ["GO:BP", "REAC"]
-
-
-def run_validation(pickle_path=PICKLE_PATH, output_dir=OUTPUT_DIR,
-                   pval_thresh=PVALUE_THRESHOLD):
+def run_validation(pickle_path="data/output/louvain_clust_julle.pkl", output_dir="data/output",
+                   pval_thresh=0.05, sources=["GO:BP", "REAC"]):
     if not os.path.exists(pickle_path):
         raise FileNotFoundError(f"Pickle file not found: {pickle_path}")
 
@@ -45,7 +38,7 @@ def run_validation(pickle_path=PICKLE_PATH, output_dir=OUTPUT_DIR,
 
     print(f"Background universe size: {len(background_gene_list)} genes.")
 
-    gp = GProfiler(return_dataframe=True)
+    gp = GProfiler()
 
     validation_results = []
 
@@ -61,47 +54,63 @@ def run_validation(pickle_path=PICKLE_PATH, output_dir=OUTPUT_DIR,
                 organism="hsapiens",
                 query=cluster_gene_list,
                 background=background_gene_list,
-                sources=SOURCES,
+                sources=sources,
                 user_threshold=pval_thresh,
                 significance_threshold_method='fdr',
                 no_evidences=True,
-                return_dataframe=True
+                as_dataframe=True
             )
 
             # If results empty or no significant rows, handle gracefully
-            if results is None or results.empty:
+            if results is None or (hasattr(results, 'empty') and results.empty):
                 n_sig_pathways = 0
                 unique_sig_proteins = set()
             else:
-                # g:Profiler returns 'p_value' column (already adjusted by method)
-                # Standardize column names used below
-                results.rename(columns={
-                    'name': 'Term',
-                    'p_value': 'Adjusted P-value',
-                    'source': 'Source'
-                }, inplace=True)
+                # Debug: show what columns we received
+                try:
+                    print(f"[DEBUG] Cluster {cid} -- result columns: {list(results.columns)}")
+                    # print a tiny sample
+                    try:
+                        print(results.head(3))
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
 
-                # Extract genes participating in each enriched term
-                if 'intersections' in results.columns:
-                    results['Genes'] = results['intersections'].apply(
-                        lambda x: ';'.join(x.keys()) if isinstance(x, dict) else str(x)
-                    )
-                elif 'intersection' in results.columns:
-                    results['Genes'] = results['intersection'].apply(
-                        lambda x: ';'.join(x) if isinstance(x, list) else str(x)
-                    )
+                # Determine p-value column (robust to different wrapper versions)
+                pval_col = None
+                for candidate in ['p_value', 'Adjusted P-value', 'pvalue', 'p_val', 'pval']:
+                    if candidate in results.columns:
+                        pval_col = candidate
+                        break
+
+                if pval_col is None:
+                    # No p-value column found; treat as no significant results
+                    n_sig_pathways = 0
+                    unique_sig_proteins = set()
                 else:
-                    results['Genes'] = ""
+                    # Extract genes participating in each enriched term
+                    if 'intersections' in results.columns:
+                        results['Genes'] = results['intersections'].apply(
+                            lambda x: ';'.join(x.keys()) if isinstance(x, dict) else str(x)
+                        )
+                    elif 'intersection' in results.columns:
+                        results['Genes'] = results['intersection'].apply(
+                            lambda x: ';'.join(x) if isinstance(x, list) else str(x)
+                        )
+                    else:
+                        # fallback: try known gene columns
+                        results['Genes'] = results.get('intersections', results.get('intersection', ''))
 
-                # Filter significant pathways by adjusted p-value
-                sig_results = results[results['Adjusted P-value'] < pval_thresh]
-                n_sig_pathways = len(sig_results)
+                    # Use the determined p-value column for filtering
+                    sig_results = results[results[pval_col] < pval_thresh]
+                    n_sig_pathways = len(sig_results)
 
-                unique_sig_proteins = set()
-                if n_sig_pathways > 0:
-                    all_genes_string = ";".join(sig_results['Genes'].astype(str).tolist())
-                    split_genes = [g for g in all_genes_string.split(';') if g]
-                    unique_sig_proteins = set(split_genes)
+                    unique_sig_proteins = set()
+                    if n_sig_pathways > 0:
+                        all_genes_string = ";".join(sig_results['Genes'].astype(str).tolist())
+                        split_genes = [g for g in all_genes_string.split(';') if g]
+                        unique_sig_proteins = set(split_genes)
 
         except Exception as e:
             print(f"Error processing cluster {cid}: {e}")
