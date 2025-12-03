@@ -10,8 +10,8 @@ import os
 # ==========================================
 # CONFIGURATION
 # ==========================================
-INPUT_PICKLE_PATH = "data/output/louvain_clust_julle.pkl"
-OUTPUT_DIR = "data/output/images"
+PICKLE_FILE = "data/output/louvain_clust_julle.pkl"
+OUTPUT_DIR = "data/output/louvain_analysis/images"
 SEEDS = [1, 50, 100, 200, 500, 1000, 3000, 5000, 7000, 10000]
 RESOLUTION = 1.0
 
@@ -30,8 +30,8 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # Load Graph
-    print(f"[INFO] Loading graph from {INPUT_PICKLE_PATH}...")
-    with open(INPUT_PICKLE_PATH, "rb") as f:
+    print(f"[INFO] Loading graph from {PICKLE_FILE}...")
+    with open(PICKLE_FILE, "rb") as f:
         data = pickle.load(f)
     G = data['graph']
     
