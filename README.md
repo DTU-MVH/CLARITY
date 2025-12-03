@@ -70,7 +70,7 @@
 | Aspect | Louvain | MCL |
 |--------|---------|-----|
 | **Best for** | Broad functional pathways | Specific protein complexes |
-| **Scale** | Large networks (10k+ nodes) | Medium networks (1k-10k nodes) |
+| **Scale** | Large networks (10k+ nodes) | Medium networks (1k-15k nodes) |
 | **Resolution** | Low (broad communities) | High (tight complexes) |
 | **Speed** | Fast | Slower |
 | **Interpretation** | Biological processes | Molecular machines |
