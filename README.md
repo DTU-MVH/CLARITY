@@ -84,29 +84,13 @@ CLARITY/
 ├── main.ipynb                           # Main Jupyter notebook orchestrating the pipeline
 ├── requirements.txt                     # Python package dependencies
 ├── 06_data_import.py                   # Script to download and organize data from Google Drive
+├── .gitignore                           # Git ignore file
 │
 ├── _raw/                               # Raw data directory (downloaded from STRING)
-│   ├── 9606.protein.info.v12.0.txt    # Protein metadata (IDs, names)
-│   └── 9606.protein.links.v12.0.min400.onlyAB.tsv  # PPI interactions
+│                                        # [Contents generated at runtime - not tracked in git]
 │
-├── data/                               # Processed data
-│   ├── cleaned_data.csv               # Cleaned interaction data (nodes & edges)
-│   ├── protein_link_cleaned.tsv       # Alternative format of cleaned interactions
-│   │
-│   └── output/                        # Analysis results
-│       ├── louvain_clust_julle.pkl    # Louvain clustering results (pickled)
-│       ├── mcl_data.pkl               # MCL clustering results (pickled)
-│       ├── cluster_statistics.csv     # Per-cluster metrics (size, density, etc.)
-│       ├── method_validation_results.csv  # ARI/NMI scores comparing methods
-│       │
-│       ├── images/                    # Static visualizations
-│       │   └── cluster_23_interactive.html  # Interactive network visualization
-│       │
-│       ├── plots/                     # Additional plots
-│       │   └── interactive_CHMP2B.html     # Protein-specific visualization
-│       │
-│       └── validation_metrics/        # Reproducibility assessment
-│           └── validation_summary_Louvain.csv  # Seed-based consistency metrics
+├── data/                               # Processed data directory
+│                                        # [Contents generated at runtime - not tracked in git]
 │
 └── features/                           # Core analysis modules
     ├── preprocessing.py               # Data cleaning pipeline
@@ -116,16 +100,8 @@ CLARITY/
     ├── 04_target_bottleneck.py       # Hub protein identification
     ├── 05_markov_clust_highperformance_object_out.py  # MCL clustering
     ├── analyze_results_louvain.py    # Post-clustering analysis
-    │
-    ├── plotting/
-    │   ├── interactive_plot_louvain.py  # PyVis interactive visualizations
-    │   └── plot_louvain.py              # Matplotlib static plots
-    │
-    └── prot_clust_modules/             # Reusable analysis modules
-        ├── bottleneck_analysis.py      # Hub protein detection & visualization
-        ├── cluster_overview.py         # Cluster summary statistics
-        ├── enrichment_analysis_2.py    # GO/Reactome enrichment (g:Profiler)
-        └── method_validation_enrichment.py  # Cross-algorithm validation
+    ├── plotting/                      # Visualization modules
+    └── prot_clust_modules/            # Reusable analysis modules
 ```
 
 ---
