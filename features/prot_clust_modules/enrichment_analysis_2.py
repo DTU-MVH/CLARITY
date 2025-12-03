@@ -99,7 +99,7 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
                 organism='hsapiens',
                 query=target_gene_list,
                 background=background_gene_list,
-                sources=['REAC'], 
+                sources=['REAC', "kegg"], 
                 user_threshold=0.05,
                 significance_threshold_method='fdr', # False Discovery Rate (Benjamini-Hochberg)
                 no_evidences=False  # Keep True if you don't need evidence codes, False speeds it up slightly
