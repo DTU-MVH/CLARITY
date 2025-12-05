@@ -13,7 +13,7 @@ from networkx.algorithms.community.quality import modularity as calculate_modula
 # CONFIGURATION
 # ==========================================
 INPUT_CSV_PATH = "data/cleaned_data.csv"
-OUTPUT_DIR = "data/output"
+OUTPUT_DIR = "data/output/Girvan_analysis"
 # MODIFIED: File name reflects FULL GRAPH and FIRST PARTITION method
 OUTPUT_PICKLE_NAME = "girvan_newman_clust_FULL_FIRST_PARTITION.pkl" 
 # This variable is no longer used but kept for consistency
