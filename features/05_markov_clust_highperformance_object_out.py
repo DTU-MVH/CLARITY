@@ -23,7 +23,7 @@ OUTPUT_DIR = "data/output"
 OUTPUT_PICKLE_NAME = "mcl_data.pkl"
 
 # MCL Parameters
-MCL_INFLATION = 2.0       # Controls granularity (1.4 = coarse, 4.0 = fine)
+MCL_INFLATION = 1.7       # Controls granularity (1.4 = coarse, 4.0 = fine)
 MCL_EXPANSION = 2         # Power parameter (usually 2)
 MCL_PRUNING_THRESHOLD = 0.001 # Prune weak connections for speed
 
