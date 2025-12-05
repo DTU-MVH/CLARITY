@@ -31,16 +31,16 @@ def run_validation_analysis(pickle_path, output_dir, clust_algo_used="unknown"):
     """
 
     if not GPROFILER_AVAILABLE:
-        print("❌ Error: 'gprofiler-official' library not installed.")
+        print(" Error: 'gprofiler-official' library not installed.")
         return None
 
-    print(f"\n--- 🧪 Validation Analysis (Curated Pathways): {clust_algo_used} ---")
-    print("--- ⚙️  Sources: Reactome (REAC), WikiPathways (WP), KEGG ---")
-    print("--- ⚙️  Correction: Bonferroni (Strict) | P < 0.05 ---")
+    print(f"\n---  Validation Analysis (Curated Pathways): {clust_algo_used} ---")
+    print("---   Sources: Reactome (REAC), WikiPathways (WP), KEGG ---")
+    print("---   Correction: Bonferroni (Strict) | P < 0.05 ---")
 
     # --- 1. Load Data ---
     if not os.path.exists(pickle_path):
-        print(f"❌ Error: Pickle file not found at {pickle_path}")
+        print(f" Error: Pickle file not found at {pickle_path}")
         return None
 
     try:
@@ -53,7 +53,7 @@ def run_validation_analysis(pickle_path, output_dir, clust_algo_used="unknown"):
         print(f"[INFO] Background universe size: {len(background_gene_list)} genes.")
 
     except Exception as e:
-        print(f"❌ Error loading pickle: {e}")
+        print(f" Error loading pickle: {e}")
         return None
 
     # --- 2. Initialize g:Profiler ---
@@ -140,11 +140,11 @@ def run_validation_analysis(pickle_path, output_dir, clust_algo_used="unknown"):
                 print(f"   ... Processed {i + 1}/{len(communities)} clusters")
 
         except Exception as e:
-            print(f"⚠️ Cluster {i} Error: {e}")
+            print(f" Cluster {i} Error: {e}")
 
     # --- 4. Save & Plot ---
     if not validation_results:
-        print("❌ No significant results found with these strict settings.")
+        print("No significant results found with these strict settings.")
         return None
 
     df_validation = pd.DataFrame(validation_results)
@@ -152,12 +152,12 @@ def run_validation_analysis(pickle_path, output_dir, clust_algo_used="unknown"):
 
     csv_path = os.path.join(output_dir, f"validation_curated_{clust_algo_used}.csv")
     df_validation.to_csv(csv_path, index=False)
-    print(f"\n✅ Results saved: {csv_path}")
+    print(f"\nResults saved: {csv_path}")
 
     # Stats
     avg_pct = df_validation['Percentage_Involved'].mean()
     avg_path = df_validation['Significant_Pathways'].mean()
-    print(f"\n--- 📊 Global Stats ({clust_algo_used}) ---")
+    print(f"\n---  Global Stats ({clust_algo_used}) ---")
     print(f"Avg % Proteins in Pathways: {avg_pct:.2f}%")
     print(f"Avg # Pathways per Cluster: {avg_path:.2f}")
 

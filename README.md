@@ -17,7 +17,7 @@
 
 ---
 
-## 📊 Clustering Approaches Explained
+##  Clustering Approaches Explained
 
 ### A. Louvain Algorithm
 **Type**: Hierarchical community detection based on modularity optimization
@@ -77,7 +77,7 @@
 
 ---
 
-## 📁 Project File Structure
+##  Project File Structure
 
 ```
 CLARITY/
@@ -504,7 +504,7 @@ Compares Louvain and MCL clustering results:
 
 ---
 
-## ⚙️ Configuration Reference
+##  Configuration Reference
 
 ### Key Configuration Parameters
 
@@ -533,7 +533,7 @@ All Python dependencies—modify to add new packages or change versions.
 
 ---
 
-## 📊 Expected Output Examples
+##  Expected Output Examples
 
 ### 1. Cluster Statistics
 ```
@@ -561,7 +561,7 @@ Phosphorylation                   | 2.1e-08 | 42         | Reactome
 
 ---
 
-## 🔧 Troubleshooting
+##  Troubleshooting
 
 ### Issue: "Module not found" errors
 **Solution**: 
@@ -587,7 +587,7 @@ pip install --upgrade gprofiler-official
 
 ---
 
-## 📚 Understanding the Output Files
+##  Understanding the Output Files
 
 | File | Purpose | Format |
 |------|---------|--------|
@@ -600,7 +600,7 @@ pip install --upgrade gprofiler-official
 
 ---
 
-## 🎯 Example Analysis Workflow
+##  Example Analysis Workflow
 
 **Scenario**: Analyze a novel Alzheimer's-related protein
 
@@ -623,7 +623,7 @@ run_script("features/03_reproducibility.py")   # Validate
 
 ---
 
-## 📝 Citation & References
+##  Citation & References
 
 **Data Source**: STRING Database v12.0
 - Human proteins (Homo sapiens, NCBI taxonomy ID: 9606)
@@ -641,7 +641,7 @@ run_script("features/03_reproducibility.py")   # Validate
 
 ---
 
-## 📄 License & Contact
+##  License & Contact
 
 This project is part of DTU's Computational Tools for Data Science course.
 
@@ -651,7 +651,7 @@ This project is part of DTU's Computational Tools for Data Science course.
 
 ---
 
-## 🚀 Advanced: Customization Guide
+##  Advanced: Customization Guide
 
 ### Modify Clustering Resolution
 
@@ -683,7 +683,7 @@ df_interactions = df_interactions[df_interactions['combined_score'] >= 700]
 
 ---
 
-## 📞 Support
+##  Support
 
 For issues or questions:
 1. Check the troubleshooting section above

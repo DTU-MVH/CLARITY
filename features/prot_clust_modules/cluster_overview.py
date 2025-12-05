@@ -40,7 +40,7 @@ def get_clustering_summary(pickle_path):
     
     data, error = _load_pickle_data(pickle_path)
     if error:
-        print(f"❌ Error: {error}")
+        print(f" Error: {error}")
         return None
 
     communities = data['communities']
@@ -82,7 +82,7 @@ def generate_cluster_stats_table(pickle_path, output_filename, output_dir="data/
     
     data, error = _load_pickle_data(pickle_path)
     if error:
-        print(f"❌ Error: {error}")
+        print(f" Error: {error}")
         return None
 
     G = data['graph']
@@ -117,7 +117,7 @@ def generate_cluster_stats_table(pickle_path, output_filename, output_dir="data/
     os.makedirs(output_dir, exist_ok=True)
     full_path = os.path.join(output_dir, output_filename)
     df.to_csv(full_path, index=False)
-    print(f"   ✅ Stats saved to: {full_path}")
+    print(f"Stats saved to: {full_path}")
 
     # DISPLAY OUTPUT (Top 20)
     print("\n--- Top 20 Largest Clusters ---")
@@ -142,13 +142,13 @@ def get_proteins_in_cluster(pickle_path, cluster_id, output_filename, output_dir
 
     data, error = _load_pickle_data(pickle_path)
     if error:
-        print(f"❌ Error: {error}")
+        print(f" Error: {error}")
         return None
 
     communities = data['communities']
 
     if cluster_id < 0 or cluster_id >= len(communities):
-        print(f"❌ Error: Cluster ID {cluster_id} invalid.")
+        print(f" Error: Cluster ID {cluster_id} invalid.")
         return None
 
     protein_list = sorted(list(communities[cluster_id]))
@@ -161,7 +161,7 @@ def get_proteins_in_cluster(pickle_path, cluster_id, output_filename, output_dir
         for protein in protein_list:
             f.write(f"{protein}\n")
 
-    print(f"   ✅ Saved list to: {full_path}")
+    print(f"Saved list to: {full_path}")
 
     # DISPLAY OUTPUT (Top 50)
     top_50 = protein_list[:50]

@@ -21,11 +21,11 @@ def create_dirs():
     dirs = ["_raw", "data", "data/output"]
     for d in dirs:
         os.makedirs(d, exist_ok=True)
-        print(f"✅ Directory ready: {d}")
+        print(f" Directory ready: {d}")
 
 def download_drive_folder():
     """Download the Google Drive folder contents."""
-    print(f"\n⬇️  Downloading folder from Google Drive...")
+    print(f"\n  Downloading folder from Google Drive...")
     
     # Check if temp dir exists and clean it if needed to avoid conflicts
     if os.path.exists(TEMP_DIR):
@@ -33,7 +33,7 @@ def download_drive_folder():
     
     # Download the folder using gdown
     gdown.download_folder(url=DRIVE_FOLDER_URL, output=TEMP_DIR, quiet=False, use_cookies=False)
-    print("✅ Download complete.")
+    print(" Download complete.")
 
 def move_files():
     """Move files from temp folder to their specific destinations."""
@@ -55,20 +55,20 @@ def move_files():
                 shutil.move(src_path, dst_path)
                 print(f"moved: {filename} -> {dest_folder}/")
             else:
-                print(f"⚠️  WARNING: Could not find '{filename}' in the downloaded folder. Check the name in CONFIGURATION.")
+                print(f"  WARNING: Could not find '{filename}' in the downloaded folder. Check the name in CONFIGURATION.")
 
 def cleanup():
     """Remove the temporary download folder."""
     if os.path.exists(TEMP_DIR):
         shutil.rmtree(TEMP_DIR)
-        print("\n🧹 Cleanup complete (temp folder removed).")
+        print("\n Cleanup complete (temp folder removed).")
 
 def main():
     create_dirs()
     download_drive_folder()
     move_files()
     cleanup()
-    print("\n🚀 CLARITY data import finished successfully.")
+    print("\n CLARITY data import finished successfully.")
 
 if __name__ == "__main__":
     main()

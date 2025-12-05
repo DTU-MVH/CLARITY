@@ -38,15 +38,15 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
     """
 
     if not GPROFILER_AVAILABLE:
-        print("❌ Error: 'gprofiler-official' library not installed.")
+        print(" Error: 'gprofiler-official' library not installed.")
         print("   Run: pip install gprofiler-official")
         return None
 
-    print(f"\n--- 🧬 Enrichment Analysis (g:Profiler): {target_protein} ---")
+    print(f"\n---  Enrichment Analysis (g:Profiler): {target_protein} ---")
 
     # --- 1. Load Data ---
     if not os.path.exists(pickle_path):
-        print(f"❌ Error: Pickle file not found at {pickle_path}")
+        print(f" Error: Pickle file not found at {pickle_path}")
         return None
 
     try:
@@ -67,12 +67,12 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
                     node2cluster[node] = cid
 
     except Exception as e:
-        print(f"❌ Error loading pickle: {e}")
+        print(f" Error loading pickle: {e}")
         return None
 
     # --- 2. Identify Target Cluster ---
     if target_protein not in node2cluster:
-        print(f"❌ Error: Protein '{target_protein}' not found in the graph.")
+        print(f" Error: Protein '{target_protein}' not found in the graph.")
         return None
 
     cluster_id = node2cluster[target_protein]
@@ -105,7 +105,7 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
                 no_evidences=False  # Keep True if you don't need evidence codes, False speeds it up slightly
             )
         except KeyError as ke:
-            print(f"❌ KeyError in g:Profiler response: {ke}")
+            print(f" KeyError in g:Profiler response: {ke}")
             print("[INFO] This often happens due to missing 'intersection' column in the API response.")
             print("[INFO] Retrying with 'no_evidences=True' parameter...")
             
@@ -161,7 +161,7 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
         os.makedirs(output_dir, exist_ok=True)
         csv_path = os.path.join(output_dir, output_file_name)
         results_df.to_csv(csv_path, index=False)
-        print(f"   ✅ Full results saved to: {csv_path}")
+        print(f"   Full results saved to: {csv_path}")
 
         # --- 7. Display ---
         print("\n--- Top Enriched Pathways (FDR < 0.05) ---")
@@ -176,7 +176,7 @@ def run_enrichment_analysis(target_protein, pickle_path, output_dir, clust_algo_
         return results_df
 
     except Exception as e:
-        print(f"❌ Analysis failed: {e}")
+        print(f"Analysis failed: {e}")
         # Print full traceback for debugging
         import traceback
         print("\n[DEBUG] Full traceback:")

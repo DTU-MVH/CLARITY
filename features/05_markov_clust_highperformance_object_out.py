@@ -11,7 +11,7 @@ from networkx.algorithms.community import modularity
 try:
     import markov_clustering as mc
 except ImportError:
-    print("❌ Error: 'markov_clustering' library not installed.")
+    print(" Error: 'markov_clustering' library not installed.")
     print("   Please run: pip install markov_clustering")
     sys.exit(1)
 
@@ -33,14 +33,14 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     output_path = os.path.join(OUTPUT_DIR, OUTPUT_PICKLE_NAME)
 
-    print(f"--- 🚀 Starting MCL Clustering ---")
+    print(f"--- Starting MCL Clustering ---")
     print(f"    Input: {INPUT_CSV_PATH}")
     print(f"    Output: {output_path}")
     print(f"    Inflation: {MCL_INFLATION}")
 
     # 2. Load Data & Normalize
     if not os.path.exists(INPUT_CSV_PATH):
-        print(f"❌ Error: Input file not found at {INPUT_CSV_PATH}")
+        print(f" Error: Input file not found at {INPUT_CSV_PATH}")
         return
 
     print("[1/5] Loading data...")
@@ -129,7 +129,7 @@ def main():
         pickle.dump(data_bundle, f)
 
     print("-" * 30)
-    print(f"✅ DONE! Total clusters found: {len(communities)}")
+    print(f" DONE! Total clusters found: {len(communities)}")
     print(f"   Total runtime: {time.time() - start_total:.2f}s")
     print(f"   You can now analyze this file using: mcl_data.pkl")
 
